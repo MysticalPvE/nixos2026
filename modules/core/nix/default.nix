@@ -1,0 +1,71 @@
+{
+  lib,
+  config,
+  username,
+  vars,
+  inputs,
+  ...
+}:
+let
+  cfg = config.nixConfig;
+in
+{
+  options = {
+    nixConfig = {
+      enable = lib.mkEnableOption "Enable nix in NixOS & home-manager";
+    };
+  };
+  config = lib.mkIf cfg.enable {
+    nix = {
+      settings = {
+        builders-use-substitutes = true;
+        experimental-features = [
+          "flakes"
+          "nix-command"
+        ];
+        extra-substituters = [
+          "https://nix-community.cachix.org"
+          "https://niri.cachix.org"
+        ];
+        extra-trusted-public-keys = [
+          "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+          "niri.cachix.org-1:Wv0OmO7SwsuRKrtbd5wVm7F67Peb6U5tfJKf7Nclp8E="
+        ];
+        keep-going = true;
+        log-lines = lib.mkDefault 50;
+        trusted-users = [
+          "${username}"
+          "@wheel"
+        ];
+        use-xdg-base-directories = false;
+        warn-dirty = false;
+      };
+    };
+    nixpkgs = {
+      config = {
+        allowBroken = false;
+        allowUnfree = true;
+      };
+      overlays = [
+        (import ../../../packages/overlay.nix { inherit inputs; })
+        inputs.nix-cachyos-kernel.overlays.pinned
+      ]
+      ++ lib.optionals vars.gaming [
+        inputs.nix-gaming-edge.overlays.default
+      ];
+    };
+    system = {
+      autoUpgrade = {
+        enable = if vars.desktop then false else true;
+        allowReboot = if vars.desktop then false else true;
+        dates = "04:00:00";
+        rebootWindow = {
+          lower = "04:00";
+          upper = "06:00";
+        };
+      };
+    };
+
+    home-manager.users.${username} = { };
+  };
+}

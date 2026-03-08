@@ -1,0 +1,221 @@
+{
+  lib,
+  config,
+  username,
+  ...
+}:
+let
+  cfg = config.desktop;
+in
+{
+  imports = [ ./base.nix ];
+
+  options = {
+    desktop = {
+      enable = lib.mkEnableOption "Enable desktop in NixOS";
+    };
+  };
+  config = lib.mkIf cfg.enable {
+    # Custom modules
+    # Apps
+    easyeffects.enable = false;
+    fluxer.enable = true;
+    freetube.enable = true;
+    halloy.enable = true;
+    mumble.enable = true;
+    rmpc.enable = false;
+    vesktop.enable = true;
+    vscode.enable = false;
+    wezterm.enable = true;
+    wireshark.enable = true;
+    zen-browser.enable = true;
+
+    # System
+    base.enable = true;
+    office.enable = true;
+
+    boot = {
+      binfmt = {
+        emulatedSystems = [
+          "aarch64-linux"
+        ];
+      };
+    };
+
+    hardware = {
+      bluetooth = {
+        enable = true;
+        settings = {
+          General = {
+            AutoEnable = false;
+            ControllerMode = "bredr";
+            Experimental = "true";
+          }; # https://reddit.com/r/NixOS/comments/1aoteqb/keychron_k1_pro_bluetooth_nixos_wkde_install/kq49q9r/?context=3
+        };
+      };
+      enableAllFirmware = true;
+      graphics = {
+        enable = true;
+        enable32Bit = true;
+      };
+      i2c.enable = true;
+    };
+    nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+    programs = {
+      ydotool.enable = true;
+    };
+    services = {
+      btrfs = {
+        autoScrub = {
+          enable = true;
+          interval = "weekly";
+        };
+      };
+      fwupd.enable = true;
+      lact.enable = true;
+      tuned = {
+        enable = true;
+        ppdSettings = {
+          profiles = {
+            balanced = "balanced";
+            performance = "throughput-performance";
+            power-saver = "desktop-powersave";
+          };
+        };
+        settings = {
+          dynamic_tuning = true;
+        };
+      };
+    };
+
+    home-manager.users.${username} =
+      {
+        pkgs,
+        vars,
+        ...
+      }:
+      {
+        packages = with pkgs; [
+          audacious
+          audacious-plugins
+          caligula
+          filezilla
+          fooyin
+          freetube
+          gearlever
+          handbrake
+          jellyfin-tui
+          kontainer
+          losslesscut-bin
+          metadata-cleaner
+          mousai
+          neo
+          picard
+          projectm-sdl-cpp
+          puddletag
+          qpwgraph
+          qtscrcpy
+          rssguard
+          rustdesk-flutter
+          signal-desktop
+          varia
+          winboat
+        ];
+        xdg = {
+          desktopEntries = {
+            foobar2000 =
+              let
+                icon = pkgs.fetchurl {
+                  url = "https://cdn2.steamgriddb.com/logo/ab2481c9f93d0ed3033a3281d865ccb2.png";
+                  hash = "sha256-aPf8MLBDPh9Q6WdtY0tnfgKKHLJNtndYI6D3VHnrHls=";
+                };
+              in
+              {
+                name = "foobar2000";
+                comment = "Launch foobar2000 using Bottles.";
+                exec = "bottles-cli run -p foobar2000 -b foobar2000";
+                icon = "${icon}";
+                categories = [
+                  "AudioVideo"
+                  "Player"
+                  "Audio"
+                ];
+                noDisplay = false;
+                startupNotify = true;
+                settings = {
+                  StartupWMClass = "foobar2000";
+                };
+              };
+            qobuz =
+              let
+                icon = pkgs.fetchurl {
+                  url = "https://img.icons8.com/ios/50/FFFFFF/qobuz.png";
+                  hash = "sha256-G7q/S8Svta+zd/ayv+GEE7luHQqnRDCxHe2uIuCecig=";
+                };
+              in
+              {
+                name = "Qobuz";
+                comment = "Launch Qobuz using Bottles.";
+                exec = "bottles-cli run -p Qobuz -b Qobuz";
+                icon = "${icon}";
+                categories = [
+                  "AudioVideo"
+                  "Player"
+                  "Audio"
+                ];
+                noDisplay = false;
+                startupNotify = true;
+                settings = {
+                  StartupWMClass = "Qobuz";
+                };
+              };
+          };
+          mimeApps =
+            let
+              audioPlayer = "org.fooyin.fooyin.desktop";
+              browser = "app.zen_browser.zen.desktop";
+              editor = "nvim.desktop";
+              imageViewer = "org.gnome.Loupe.desktop";
+              pdfViewer = "org.gnome.Evince.desktop";
+              videoPlayer = "io.github.celluloid_player.Celluloid.desktop";
+            in
+            {
+              enable = true;
+              defaultApplications = {
+                "audio/*" = audioPlayer;
+                "image/*" = imageViewer;
+                "video/*" = videoPlayer;
+                "text/*" = editor;
+                "text/html" = browser;
+                "text/plain" = editor;
+                "application/json" = editor;
+                "application/pdf" = pdfViewer;
+                "application/toml" = editor;
+                "application/x-bat" = editor;
+                "application/xhtml+xml" = browser;
+                "application/xml" = editor;
+                "application/x-shellscript" = editor;
+                "application/x-yaml" = editor;
+                "inode/directory" = "yazi.desktop";
+                "x-scheme-handler/bottles" = "com.usebottles.bottles.desktop";
+                "x-scheme-handler/http" = browser;
+                "x-scheme-handler/https" = browser;
+                "x-scheme-handler/sgnl" = "signal.desktop";
+                "x-scheme-handler/signalcaptcha" = "signal.desktop";
+                "x-scheme-handler/terminal" = "org.wezfurlong.wezterm.desktop";
+              }
+              // lib.optionalAttrs vars.gaming {
+                "application/x-alcohol" = "cdemu-client.desktop";
+                "application/x-cue" = "cdemu-client.desktop";
+                "application/x-dosexec" = "nero-umu.desktop";
+                "application/x-ms-ne-executable" = "nero-umu.desktop";
+                "application/vnd.microsoft.portable-executable" = "nero-umu.desktop";
+                "application/x-gd-rom-cue" = "cdemu-client.desktop";
+                "application/x-msdownload" = "nero-umu.desktop";
+                "x-scheme-handler/ror2mm" = "r2modman.desktop";
+              };
+            };
+        };
+      };
+  };
+}
